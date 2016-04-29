@@ -24,8 +24,6 @@
 var Waves = (function(Waves, $, undefined) {
 	"use strict";
 
-    var Waves = [];
-
     Waves.server = 'http://82.165.138.42:6869'; //Enter your node or localhost here.
     Waves.epoch = 1460678400;
     Waves.seed = '';
