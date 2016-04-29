@@ -33,6 +33,11 @@ var Waves = (function(Waves, $, undefined) {
 
     Waves.createAccount = function (publicKey) {
 
+        $.getJSON(Waves.server+'/waves/address/'+publicKey, function(response) {
+
+            return callback(response);
+
+        });
 
     }
 
