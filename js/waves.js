@@ -1,4 +1,18 @@
-
+/******************************************************************************
+ * Copyright © 2016 The Waves Developers.                                     *
+ *                                                                            *
+ * See the LICENSE files at                                                   *
+ * the top-level directory of this distribution for the individual copyright  *
+ * holder information and the developer policies on copyright and licensing.  *
+ *                                                                            *
+ * Unless otherwise agreed in a custom licensing agreement, no part of the    *
+ * Waves software, including this file, may be copied, modified, propagated,  *
+ * or distributed except according to the terms contained in the LICENSE      *
+ * file.                                                                      *
+ *                                                                            *
+ * Removal or modification of this copyright notice is prohibited.            *
+ *                                                                            *
+ ******************************************************************************/
 /**
  * @depends {3rdparty/jquery-2.1.0.js}
  * @depends {3rdparty/bootstrap.js}
@@ -23,13 +37,13 @@
  */
 var Waves = (function(Waves, $, undefined) {
 	"use strict";
-
-    Waves.server = 'http://82.165.138.42:6869'; //Enter your node or localhost here.
+    
+    Waves.server = 'http://52.51.92.182:6869'; //Enter your node or localhost here.
     Waves.epoch = 1460678400;
     Waves.seed = '';
     Waves.hasLocalStorage = _checkDOMenabled();
-    var stateInterval;
-	var stateIntervalSeconds = 30;
+    Waves.stateInterval;
+	Waves.stateIntervalSeconds = 20;
 
     Waves.createAccount = function (publicKey) {
 
@@ -41,13 +55,13 @@ var Waves = (function(Waves, $, undefined) {
 
     }
 
-    Waves.getAddressesBalance = function (address, callback) {
+    Waves.getAddress = function (publicKey) {
 
-        $.getJSON(Waves.server+'/addresses/balance/'+address, function(response) {
+        $.getJSON(Waves.server+'/waves/address/'+publicKey, function(response) {
 
             return callback(response);
 
-        });
+        }); 
 
     }
 

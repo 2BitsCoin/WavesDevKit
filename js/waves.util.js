@@ -1,3 +1,19 @@
+/******************************************************************************
+ * Copyright © 2016 The Waves Developers.                                *
+ *                                                                            *
+ * See the LICENSE files at                                                   *
+ * the top-level directory of this distribution for the individual copyright  *
+ * holder information and the developer policies on copyright and licensing.  *
+ *                                                                            *
+ * Unless otherwise agreed in a custom licensing agreement, no part of the    *
+ * Waves software, including this file, may be copied, modified, propagated,  *
+ * or distributed except according to the terms contained in the LICENSE      *
+ * file.                                                                      *
+ *                                                                            *
+ * Removal or modification of this copyright notice is prohibited.            *
+ *                                                                            *
+ ******************************************************************************/
+
 /**
  * @depends {waves.js}
  */
@@ -214,13 +230,86 @@ var Waves = (function (Waves, $, undefined) {
         "ug-CN": "yyyy-M-d",
         "sr-Cyrl-BA": "d.M.yyyy",
         "es-US": "M/d/yyyy"
-    };
+    }
 
     var LANG = window.navigator.userLanguage || window.navigator.language;
     var LOCALE_DATE_FORMAT = LOCALE_DATE_FORMATS[LANG] || 'dd/MM/yyyy';
 
+    Waves._hash = {
+        init: SHA256_init,
+        update: SHA256_write,
+        getBytes: SHA256_finalize
+    };
 
-    //Returns publicKey Byte Array
+    Waves.MAP = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+
+    Waves.getLocalDateFormat = function () {
+        return LOCALE_DATE_FORMAT;
+    }
+
+    Waves.transactionType = function (number) {
+        var types = {
+            1: '',
+            2: 'Payment'
+        }
+
+        return types[number];
+    }
+
+    Waves.signatureData = function(senderPublicKey, recipientAddress, amount, fee, wavesTime) {
+
+        var typeBytes = converters.int32ToBytes(2).reverse();
+        var timestampBytes = Waves.longToByteArray(wavesTime);
+        var amountBytes = Waves.longToByteArray(amount);
+        var feeBytes = Waves.longToByteArray(fee);
+        var decodePublicKey = Base58.decode(senderPublicKey);
+        var decodeRecipient = Base58.decode(recipientAddress);
+
+        var publicKey = [];
+        var recipient = [];
+
+        for (var i = 0; i < decodePublicKey.length; ++i) {
+            publicKey.push(decodePublicKey[i] & 0xff)
+        }
+
+        for (var i = 0; i < decodeRecipient.length; ++i) {
+            recipient.push(decodeRecipient[i] & 0xff)
+        }
+
+        var signatureBytes = [];
+
+        return signatureBytes.concat(typeBytes, timestampBytes, publicKey, recipient, amountBytes, feeBytes);
+    }
+
+    Waves.areByteArraysEqual = function (bytes1, bytes2) {
+        if (bytes1.length !== bytes2.length)
+            return false;
+
+        for (var i = 0; i < bytes1.length; ++i) {
+            if (bytes1[i] !== bytes2[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    //Get timestamp in Waves
+    Waves.getTime = function() {
+        return Date.now();
+    }
+
+    Waves.longToByteArray = function (value) {
+
+        var bytes = new Array(7);
+        for(var k=7;k>=0;k--) {
+           bytes[k] = value & (255);
+           value = value / 256;
+        }
+
+        return bytes;
+    }
+
+    //Returns publicKey
     Waves.getPublicKey = function(secretPhrase)
     {
         SHA256_init();
@@ -228,17 +317,17 @@ var Waves = (function (Waves, $, undefined) {
         var ky = converters.byteArrayToHexString(curve25519.keygen(SHA256_finalize()).p);
 
         //Array bytes in converters.hexStringToByteArray(ky);
-        return Waves.to_b58(converters.hexStringToByteArray(ky),'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
+        return Base58.encode(converters.hexStringToByteArray(ky));
     }
 
-    //Returns privateKey ByteArray
+    //Returns privateKey
     Waves.getPrivateKey = function (secretPhrase) {
         SHA256_init();
         SHA256_write(converters.stringToByteArray(secretPhrase));
         var ky = converters.byteArrayToHexString(curve25519.keygen(SHA256_finalize()).k);
         
         //Array Bytes in converters.hexStringToByteArray(ky)
-        return Waves.to_b58(converters.hexStringToByteArray(ky),'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
+        return Base58.encode(converters.hexStringToByteArray(ky));
     }
 
     Waves.formatVolume = function (volume) {
@@ -261,7 +350,7 @@ var Waves = (function (Waves, $, undefined) {
 			formattedVolume = digits[i] + formattedVolume;
 		}
 		return formattedVolume + " " + size;
-	};
+	}
 
 
     Waves.calculatePercentage = function (a, b, rounding_mode) {
@@ -278,7 +367,7 @@ var Waves = (function (Waves, $, undefined) {
 		Big.RM = 1;
 
 		return result.toString();
-	};
+	}
 
    
     Waves.amountToPrecision = function (amount, decimals) {
@@ -301,8 +390,7 @@ var Waves = (function (Waves, $, undefined) {
 		} else {
 			throw $.t("error_invalid_input");
 		}
-	};
-
+	}
 
     Waves.format = function (params, no_escaping) {
         var amount;
@@ -338,7 +426,7 @@ var Waves = (function (Waves, $, undefined) {
 		}
 
 		return output;
-	};
+	}
 
 
     Waves.formatTimestamp = function (timestamp, date_only, isAbsoluteTime) {
@@ -397,7 +485,7 @@ var Waves = (function (Waves, $, undefined) {
 		} else {
 			return date.toLocaleString();
 		}
-	};
+	}
 
     Waves.isPrivateIP = function (ip) {
 		if (!/^\d+\.\d+\.\d+\.\d+$/.test(ip)) {
@@ -405,7 +493,7 @@ var Waves = (function (Waves, $, undefined) {
 		}
 		var parts = ip.split('.');
       return parts[0] === '10' || parts[0] == '127' || parts[0] === '172' && (parseInt(parts[1], 10) >= 16 && parseInt(parts[1], 10) <= 31) || parts[0] === '192' && parts[1] === '168';
-	};
+	}
 
     Waves.convertToHex16 = function (str) {
 		var hex, i;
@@ -416,7 +504,7 @@ var Waves = (function (Waves, $, undefined) {
 		}
 
 		return result;
-	};
+	}
 
     Waves.convertFromHex16 = function (hex) {
 		var j;
@@ -427,7 +515,7 @@ var Waves = (function (Waves, $, undefined) {
 		}
 
 		return back;
-	};
+	}
 
     Waves.convertFromHex8 = function (hex) {
         var hexStr = hex.toString(); //force conversion
@@ -436,7 +524,7 @@ var Waves = (function (Waves, $, undefined) {
             str += String.fromCharCode(parseInt(hexStr.substr(i, 2), 16));
         }
 		return str;
-	};
+	}
 
     Waves.convertToHex8 = function (str) {
 		var hex = '';
@@ -444,7 +532,7 @@ var Waves = (function (Waves, $, undefined) {
 			hex += '' + str.charCodeAt(i).toString(16);
 		}
 		return hex;
-	};
+	}
 
 
     Waves.setCookie = function (name, value, days) {
@@ -458,7 +546,7 @@ var Waves = (function (Waves, $, undefined) {
 		}
         //noinspection JSDeprecatedSymbols
 		document.cookie = escape(name) + "=" + escape(value) + expires + "; path=/";
-	};
+	}
 
     Waves.getCookie = function (name) {
         //noinspection JSDeprecatedSymbols
@@ -475,15 +563,15 @@ var Waves = (function (Waves, $, undefined) {
             }
         }
 		return null;
-	};
+	}
 
     Waves.deleteCookie = function (name) {
 		Waves.setCookie(name, "", -1);
-	};
+	}
 
-    Waves.isControlKey = function (charCode) {
-        return !(charCode >= 32 || charCode == 10 || charCode == 13);
-    };
+    Waves.isEnterKey = function (charCode) {
+        return (charCode == 10 || charCode == 13);
+    }
 
     Waves.getUrlParameter = function (sParam) {
 		var sPageURL = window.location.search.substring(1);
@@ -495,7 +583,7 @@ var Waves = (function (Waves, $, undefined) {
 			}
 		}
 		return false;
-    };
+    }
 
 	// http://stackoverflow.com/questions/12518830/java-string-getbytesutf8-javascript-analog
     Waves.getUtf8Bytes = function (str) {
@@ -506,7 +594,7 @@ var Waves = (function (Waves, $, undefined) {
             arr[i] = utf8.charCodeAt(i);
         }
         return arr;
-    };
+    }
 
  
     // http://stackoverflow.com/questions/18729405/how-to-convert-utf8-string-to-byte-array
@@ -539,7 +627,7 @@ var Waves = (function (Waves, $, undefined) {
             }
         }
         return utf8;
-    };
+    }
 
     function byteArrayToBigInteger(byteArray) {
         var value = new BigInteger("0", 10);
@@ -558,71 +646,42 @@ var Waves = (function (Waves, $, undefined) {
             return firstChar;
         }
         return firstChar + str.slice(1);
-    };
+    }
 
     Waves.addEllipsis = function(str, length) {
         if (!str || str == "" || str.length <= length) {
             return str;
         }
         return str.substring(0, length) + "...";
-    };
-
-    //Taken from https://gist.github.com/diafygi/90a3e80ca1c2793220e5/
-    Waves.to_b58 = function(
-        B,            //Uint8Array raw byte input
-        A             //Base58 characters (i.e. "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz")
-    ) {
-        var d = [],   //the array for storing the stream of base58 digits
-            s = "",   //the result string variable that will be returned
-            i,        //the iterator variable for the byte input
-            j,        //the iterator variable for the base58 digit array (d)
-            c,        //the carry amount variable that is used to overflow from the current base58 digit to the next base58 digit
-            n;        //a temporary placeholder variable for the current base58 digit
-        for(i in B) { //loop through each byte in the input stream
-            j = 0,                           //reset the base58 digit iterator
-            c = B[i];                        //set the initial carry amount equal to the current byte amount
-            s += c || s.length ^ i ? "" : 1; //prepend the result string with a "1" (0 in base58) if the byte stream is zero and non-zero bytes haven't been seen yet (to ensure correct decode length)
-            while(j in d || c) {             //start looping through the digits until there are no more digits and no carry amount
-                n = d[j];                    //set the placeholder for the current base58 digit
-                n = n ? n * 256 + c : c;     //shift the current base58 one byte and add the carry amount (or just add the carry amount if this is a new digit)
-                c = n / 58 | 0;              //find the new carry amount (floored integer of current digit divided by 58)
-                d[j] = n % 58;               //reset the current base58 digit to the remainder (the carry amount will pass on the overflow)
-                j++                          //iterate to the next base58 digit
-            }
-        }
-        while(j--)        //since the base58 digits are backwards, loop through them in reverse order
-            s += A[d[j]]; //lookup the character associated with each base58 digit
-        return s          //return the final base58 string
     }
 
+    Waves.encryptWalletSeed = function (phrase, key) {
+        var rkey = Waves.prepKey(key);
+        return CryptoJS.AES.encrypt(phrase, rkey);
+    }
 
-    Waves.from_b58 = function(
-        S,            //Base58 encoded string input
-        A             //Base58 characters (i.e. "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz")
-    ) {
-        var d = [],   //the array for storing the stream of decoded bytes
-            b = [],   //the result byte array that will be returned
-            i,        //the iterator variable for the base58 string
-            j,        //the iterator variable for the byte array (d)
-            c,        //the carry amount variable that is used to overflow from the current byte to the next byte
-            n;        //a temporary placeholder variable for the current byte
-        for(i in S) { //loop through each base58 character in the input string
-            j = 0,                             //reset the byte iterator
-            c = A.indexOf( S[i] );             //set the initial carry amount equal to the current base58 digit
-            if(c < 0)                          //see if the base58 digit lookup is invalid (-1)
-                return undefined;              //if invalid base58 digit, bail out and return undefined
-            c || b.length ^ i ? i : b.push(0); //prepend the result array with a zero if the base58 digit is zero and non-zero characters haven't been seen yet (to ensure correct decode length)
-            while(j in d || c) {               //start looping through the bytes until there are no more bytes and no carry amount
-                n = d[j];                      //set the placeholder for the current byte
-                n = n ? n * 58 + c : c;        //shift the current byte 58 units and add the carry amount (or just add the carry amount if this is a new byte)
-                c = n >> 8;                    //find the new carry amount (1-byte shift of current byte value)
-                d[j] = n % 256;                //reset the current byte to the remainder (the carry amount will pass on the overflow)
-                j++                            //iterate to the next byte
-            }
+    Waves.decryptWalletSeed = function (cipher, key, checksum) {
+        var rkey = Waves.prepKey(key);
+        var data = CryptoJS.AES.decrypt(cipher, rkey);
+
+        if (converters.byteArrayToHexString(Waves.simpleHash(converters.hexStringToByteArray(data.toString()))) == checksum)
+            return converters.hexStringToString(data.toString());
+        else return false;
+    }
+
+    Waves.prepKey = function (key) {
+        var rounds = 1000;
+        var digest = key;
+        for (var i = 0; i < rounds; i++) {
+            digest = converters.byteArrayToHexString(Waves.simpleHash(digest));
         }
-        while(j--)               //since the byte array is backwards, loop through it in reverse order
-            b.push( d[j] );      //append each byte to the result
-        return new Uint8Array(b) //return the final byte array in Uint8Array format
+        return digest;
+    }
+
+    Waves.simpleHash = function (message) {
+        Waves._hash.init();
+        Waves._hash.update(message);
+        return Waves._hash.getBytes();
     }
 
 
