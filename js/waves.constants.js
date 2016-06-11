@@ -20,12 +20,13 @@
 var Waves = (function (Waves, $) {
     Waves.constants = {
         'DB_VERSION': 2,
+        'CLIENT_VERSION' : '0.3a',
+        'SCOREX_VERSION' : 'v0.1.3',
 
         'PLUGIN_VERSION': 1,
         'MAX_SHORT_JAVA': 32767,
         'MAX_UNSIGNED_SHORT_JAVA': 65535,
         'MAX_INT_JAVA': 2147483647,
-        'MIN_PRUNABLE_MESSAGE_LENGTH': 28,
         'DISABLED_API_ERROR_CODE': 16,
 
         "REQUEST_TYPES": {},
@@ -36,10 +37,23 @@ var Waves = (function (Waves, $) {
         'EPOCH_BEGINNING': 0,
         'FORGING': 'forging',
         'NOT_FORGING': 'not_forging',
-        'UNKNOWN': 'unknown'
+        'UNKNOWN': 'unknown',
+
+        "RAW_ADDRESS_LENGTH" : 35,
+        "ADDRESS_PREFIX": "1W",
+        "MAINNET_ADDRESS_REGEXP": /^[a-zA-Z0-9]{35}$/,
+
+        "INITIAL_NONCE": 0,
     };
 
+    if (Waves.UI === undefined)
+        Waves.UI = {};
 
+    Waves.UI.constants = {
+        'MINIMUM_PAYMENT_AMOUNT' : 1e-8,
+        'AMOUNT_DECIMAL_PLACES' : 8
+    }
+    
     Waves.loadServerConstants = function () {
         Waves.sendRequest("getConstants", {}, function (response) {
             if (response.genesisAccountId) {
